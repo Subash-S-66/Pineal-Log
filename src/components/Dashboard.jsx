@@ -213,10 +213,6 @@ export default function Dashboard() {
           <strong>{dailyStaminaToday}</strong>
         </div>
         <div className={styles.totalItem}>
-          <span>Overall Stamina</span>
-          <strong>{grandTotal}</strong>
-        </div>
-        <div className={styles.totalItem}>
           <span>Contributors Today</span>
           <strong>{contributorsToday} / {members.length}</strong>
         </div>
