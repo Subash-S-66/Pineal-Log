@@ -16,11 +16,24 @@ export async function generatePDF(members, entries, currentWeekStart, weekDays) 
   const textMuted = '#6a7f9a';
   const textPrimary = '#e0d4bc';
 
-  // Fill background
+  // Override addPage to inject background first thing
+  const originalAddPage = doc.addPage.bind(doc);
+  doc.addPage = function() {
+    originalAddPage(...arguments);
+    const prevFillStyle = doc.getFillColor();
+    doc.setFillColor(bgColor);
+    doc.rect(0, 0, 297, 210, 'F');
+    doc.setFillColor(gold);
+    doc.rect(0, 0, 297, 4, 'F');
+    doc.setFillColor(prevFillStyle);
+    return this;
+  };
+
+  // Fill background on first page
   doc.setFillColor(bgColor);
   doc.rect(0, 0, 297, 210, 'F');
 
-  // Gold accent bar
+  // Gold accent bar on first page
   doc.setFillColor(gold);
   doc.rect(0, 0, 297, 4, 'F');
 
@@ -123,22 +136,6 @@ export async function generatePDF(members, entries, currentWeekStart, weekDays) 
         data.cell.styles.fontStyle = 'bold';
         data.cell.styles.fillColor = '#0c1221';
       }
-    },
-    didDrawPage: function(data) {
-      // Redraw background and top gold bar on every page addition
-      // This is necessary because autoTable doesn't carry over standard doc styling on new pages
-
-      // Store current drawing state
-      const prevFillStyle = doc.getFillColor();
-
-      doc.setFillColor(bgColor);
-      doc.rect(0, 0, 297, 210, 'F');
-
-      doc.setFillColor(gold);
-      doc.rect(0, 0, 297, 4, 'F');
-
-      // Restore previous state so autoTable can continue normally
-      doc.setFillColor(prevFillStyle);
     }
   });
 
