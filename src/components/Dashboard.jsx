@@ -18,7 +18,7 @@ export default function Dashboard() {
   const [toastMessage, setToastMessage] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const weekEnd = endOfWeek(currentWeekStart, { weekStarts: 1 });
+  const weekEnd = useMemo(() => endOfWeek(currentWeekStart, { weekStarts: 1 }), [currentWeekStart]);
   const isCurrentWeek = isSameDay(startOfWeek(new Date(), { weekStarts: 1 }), currentWeekStart) || currentWeekStart > new Date();
   const weekDays = useMemo(() => {
     return Array.from({ length: 7 }).map((_, i) => addDays(currentWeekStart, i));
@@ -31,6 +31,10 @@ export default function Dashboard() {
     }, 3000);
   };
 
+  // Convert dates to stable primitive strings for the dependency array to prevent infinite fetch loops
+  const currentWeekStartStr = format(currentWeekStart, 'yyyy-MM-dd');
+  const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -38,14 +42,23 @@ export default function Dashboard() {
         // Fetch members
         const membersRes = await fetch('/api/members');
         const membersData = await membersRes.json();
-        setMembers(membersData);
+
+        if (Array.isArray(membersData)) {
+          setMembers(membersData);
+        } else {
+          throw new Error('Invalid members format');
+        }
 
         // Fetch entries for the week
-        const startDateStr = format(currentWeekStart, 'yyyy-MM-dd');
-        const endDateStr = format(weekEnd, 'yyyy-MM-dd');
-        const entriesRes = await fetch(`/api/entries?startDate=${startDateStr}&endDate=${endDateStr}`);
+        const entriesRes = await fetch(`/api/entries?startDate=${currentWeekStartStr}&endDate=${weekEndStr}`);
         const entriesData = await entriesRes.json();
-        setEntries(entriesData);
+
+        if (Array.isArray(entriesData)) {
+          setEntries(entriesData);
+        } else {
+          setEntries([]);
+          throw new Error('Invalid entries format or API error');
+        }
       } catch (error) {
         console.error('Failed to fetch data', error);
         showToast('Failed to load data. Please try again.');
@@ -55,7 +68,7 @@ export default function Dashboard() {
     };
 
     fetchData();
-  }, [currentWeekStart, weekEnd]);
+  }, [currentWeekStartStr, weekEndStr]);
 
   const handleAddMember = (newMember) => {
     setMembers((prev) => [...prev, newMember]);
