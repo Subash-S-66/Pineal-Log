@@ -49,7 +49,7 @@ export async function generatePDF(members, entries, currentWeekStart, weekDays) 
   let activeMembers = 0;
 
   const getStaminaValue = (memberId, dateStr) => {
-    const entry = entries.find(e => e.memberId === memberId && e.date === dateStr);
+    const entry = entries.find(e => String(e.memberId) === String(memberId) && e.date === dateStr);
     return entry ? entry.stamina : 0;
   };
 
@@ -123,6 +123,22 @@ export async function generatePDF(members, entries, currentWeekStart, weekDays) 
         data.cell.styles.fontStyle = 'bold';
         data.cell.styles.fillColor = '#0c1221';
       }
+    },
+    didDrawPage: function(data) {
+      // Redraw background and top gold bar on every page addition
+      // This is necessary because autoTable doesn't carry over standard doc styling on new pages
+
+      // Store current drawing state
+      const prevFillStyle = doc.getFillColor();
+
+      doc.setFillColor(bgColor);
+      doc.rect(0, 0, 297, 210, 'F');
+
+      doc.setFillColor(gold);
+      doc.rect(0, 0, 297, 4, 'F');
+
+      // Restore previous state so autoTable can continue normally
+      doc.setFillColor(prevFillStyle);
     }
   });
 

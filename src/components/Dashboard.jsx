@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { format, startOfWeek, endOfWeek, addDays, subWeeks, addWeeks, isSameDay, startOfDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, Plus, Download, Trash2, Check, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Download, Trash2, Check, Loader2, Search } from 'lucide-react';
 import AddMemberModal from './AddMemberModal';
 import styles from './Dashboard.module.css';
 
@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [savedCells, setSavedCells] = useState({}); // `${memberId}-${date}` -> bool
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const weekEnd = endOfWeek(currentWeekStart, { weekStarts: 1 });
   const isCurrentWeek = isSameDay(startOfWeek(new Date(), { weekStarts: 1 }), currentWeekStart) || currentWeekStart > new Date();
@@ -134,14 +135,14 @@ export default function Dashboard() {
   };
 
   const getStaminaValue = (memberId, dateStr) => {
-    const entry = entries.find(e => e.memberId === memberId && e.date === dateStr);
+    const entry = entries.find(e => String(e.memberId) === String(memberId) && e.date === dateStr);
     return entry ? entry.stamina : '';
   };
 
   const getMemberWeeklyTotal = (memberId) => {
     return weekDays.reduce((sum, day) => {
       const dateStr = format(day, 'yyyy-MM-dd');
-      const entry = entries.find(e => e.memberId === memberId && e.date === dateStr);
+      const entry = entries.find(e => String(e.memberId) === String(memberId) && e.date === dateStr);
       return sum + (entry?.stamina || 0);
     }, 0);
   };
@@ -150,9 +151,15 @@ export default function Dashboard() {
     return entries.filter(e => e.date === dateStr).reduce((sum, e) => sum + (e.stamina || 0), 0);
   };
 
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const dailyStaminaToday = getDayTotal(todayStr);
+  const contributorsToday = entries.filter(e => e.date === todayStr && (e.stamina || 0) > 0).length;
+
   const grandTotal = members.reduce((sum, m) => sum + getMemberWeeklyTotal(m._id), 0);
   const activeMembersThisWeek = members.filter(m => getMemberWeeklyTotal(m._id) > 0).length;
   const avgPerMember = members.length > 0 ? (grandTotal / members.length).toFixed(1) : 0;
+
+  const filteredMembers = members.filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   if (loading && members.length === 0) {
     return <div className={styles.loadingContainer}><Loader2 className={styles.spinner} size={48} /></div>;
@@ -167,6 +174,26 @@ export default function Dashboard() {
           <p className={styles.subtitle}>HOS Alliance · Server 1895</p>
         </div>
       </header>
+
+      {/* TOP TOTALS BAR */}
+      <div className={styles.topTotalsBar}>
+        <div className={styles.totalItem}>
+          <span>Daily Stamina</span>
+          <strong>{dailyStaminaToday}</strong>
+        </div>
+        <div className={styles.totalItem}>
+          <span>Weekly Stamina</span>
+          <strong>{grandTotal}</strong>
+        </div>
+        <div className={styles.totalItem}>
+          <span>Contributors Today</span>
+          <strong>{contributorsToday} / {members.length}</strong>
+        </div>
+        <div className={styles.totalItem}>
+          <span>Avg per Member</span>
+          <strong>{avgPerMember}</strong>
+        </div>
+      </div>
 
       {/* DATE NAVIGATOR */}
       <div className={styles.dateNavigator}>
@@ -185,24 +212,38 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* ACTION BAR */}
+      {/* ACTION BAR & SEARCH */}
       <div className={styles.actionBar}>
-        <button onClick={() => setShowAddModal(true)} className={styles.btnPrimary}>
-          <Plus size={18} /> Add Member
-        </button>
-        <button
-          onClick={handleDownloadPdf}
-          className={styles.btnSecondary}
-          disabled={generatingPdf || members.length === 0}
-        >
-          {generatingPdf ? <Loader2 size={18} className={styles.spinner} /> : <Download size={18} />}
-          Download PDF Report
-        </button>
+        <div className={styles.searchWrapper}>
+          <Search size={18} className={styles.searchIcon} />
+          <input
+            type="text"
+            placeholder="Search member..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={styles.searchInput}
+          />
+        </div>
+        <div className={styles.actionButtons}>
+          <button onClick={() => setShowAddModal(true)} className={styles.btnPrimary}>
+            <Plus size={18} /> Add Member
+          </button>
+          <button
+            onClick={handleDownloadPdf}
+            className={styles.btnSecondary}
+            disabled={generatingPdf || members.length === 0}
+          >
+            {generatingPdf ? <Loader2 size={18} className={styles.spinner} /> : <Download size={18} />}
+            Download PDF Report
+          </button>
+        </div>
       </div>
 
       {/* STAMINA TABLE */}
       {members.length === 0 ? (
         <div className={styles.emptyState}>No members found. Add one to get started.</div>
+      ) : filteredMembers.length === 0 ? (
+        <div className={styles.emptyState}>No members found matching &quot;{searchQuery}&quot;.</div>
       ) : (
         <div className={styles.tableWrapper}>
           <table className={styles.table}>
@@ -220,7 +261,7 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {members.map((member, index) => {
+              {filteredMembers.map((member, index) => {
                 const weeklyTotal = getMemberWeeklyTotal(member._id);
                 return (
                   <tr key={member._id}>
@@ -287,7 +328,7 @@ export default function Dashboard() {
 
       {/* MOBILE CARDS */}
       <div className={styles.mobileCards}>
-        {members.map(member => {
+        {filteredMembers.map(member => {
           const weeklyTotal = getMemberWeeklyTotal(member._id);
           return (
             <div key={member._id} className={styles.card}>
@@ -339,15 +380,19 @@ export default function Dashboard() {
         })}
       </div>
 
-      {/* TOTALS BAR */}
+      {/* BOTTOM TOTALS BAR */}
       <div className={styles.totalsBar}>
+        <div className={styles.totalItem}>
+          <span>Daily Stamina</span>
+          <strong>{dailyStaminaToday}</strong>
+        </div>
         <div className={styles.totalItem}>
           <span>Weekly Stamina</span>
           <strong>{grandTotal}</strong>
         </div>
         <div className={styles.totalItem}>
-          <span>Active Members</span>
-          <strong>{activeMembersThisWeek} / {members.length}</strong>
+          <span>Contributors Today</span>
+          <strong>{contributorsToday} / {members.length}</strong>
         </div>
         <div className={styles.totalItem}>
           <span>Avg per Member</span>

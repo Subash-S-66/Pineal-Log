@@ -67,7 +67,43 @@
 .actionBar {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   margin-bottom: 24px;
+  gap: 16px;
+}
+
+.searchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 300px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+}
+
+.searchInput {
+  width: 100%;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  padding: 10px 12px 10px 36px;
+  border-radius: 4px;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.searchInput:focus {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 1px var(--accent-gold);
+}
+
+.actionButtons {
+  display: flex;
   gap: 16px;
 }
 
@@ -262,6 +298,16 @@
   box-shadow: var(--shadow-gold);
 }
 
+.topTotalsBar {
+  display: flex;
+  justify-content: space-around;
+  background-color: var(--bg-card);
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-default);
+  margin-bottom: 24px;
+}
+
 .totalItem {
   display: flex;
   flex-direction: column;
@@ -407,6 +453,15 @@
 
   .actionBar {
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .searchWrapper {
+    max-width: 100%;
+  }
+
+  .actionButtons {
+    flex-direction: column;
   }
 
   .btnPrimary, .btnSecondary {
@@ -422,5 +477,25 @@
   .totalsBar {
     flex-direction: column;
     gap: 24px;
+  }
+
+  .topTotalsBar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 12px 8px;
+  }
+
+  .topTotalsBar .totalItem {
+    gap: 4px;
+  }
+
+  .topTotalsBar .totalItem span {
+    font-size: 10px;
+    text-align: center;
+  }
+
+  .topTotalsBar .totalItem strong {
+    font-size: 18px;
   }
 }
