@@ -16,7 +16,48 @@ export async function GET() {
     const db = client.db('pineallog');
     const collection = db.collection('members');
 
-    let members = await collection.find({}).sort({ sortOrder: 1 }).toArray();
+    // Use aggregation to get total stamina per member
+    let members = await collection.aggregate([
+      {
+        $addFields: {
+          idString: { $toString: "$_id" }
+        }
+      },
+      {
+        $lookup: {
+          from: 'entries',
+          let: { idStr: "$idString", idObj: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ["$memberId", "$$idStr"] },
+                    { $eq: ["$memberId", "$$idObj"] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: 'memberEntries'
+        }
+      },
+      {
+        $addFields: {
+          overallTotal: {
+            $sum: "$memberEntries.stamina"
+          }
+        }
+      },
+      {
+        $project: {
+          memberEntries: 0
+        }
+      },
+      {
+        $sort: { sortOrder: 1 }
+      }
+    ]).toArray();
 
     // Auto-seed if 0 members exist
     if (members.length === 0) {
@@ -27,7 +68,47 @@ export async function GET() {
       }));
 
       await collection.insertMany(docs);
-      members = await collection.find({}).sort({ sortOrder: 1 }).toArray();
+      members = await collection.aggregate([
+        {
+          $addFields: {
+            idString: { $toString: "$_id" }
+          }
+        },
+        {
+          $lookup: {
+            from: 'entries',
+            let: { idStr: "$idString", idObj: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $or: [
+                      { $eq: ["$memberId", "$$idStr"] },
+                      { $eq: ["$memberId", "$$idObj"] }
+                    ]
+                  }
+                }
+              }
+            ],
+            as: 'memberEntries'
+          }
+        },
+        {
+          $addFields: {
+            overallTotal: {
+              $sum: "$memberEntries.stamina"
+            }
+          }
+        },
+        {
+          $project: {
+            memberEntries: 0
+          }
+        },
+        {
+          $sort: { sortOrder: 1 }
+        }
+      ]).toArray();
     }
 
     return NextResponse.json(members);

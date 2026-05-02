@@ -56,7 +56,7 @@ export async function generatePDF(members, entries, currentWeekStart, weekDays) 
   doc.text(dateStr, 283, 24, { align: 'right' });
 
   // Prepare table data
-  const head = [['#', 'Member', ...weekDays.map(d => format(d, 'EEE (MM/dd)')), 'Total']];
+  const head = [['#', 'Member', ...weekDays.map(d => format(d, 'EEE (MM/dd)')), 'Overall Total']];
 
   let grandTotal = 0;
   let activeMembers = 0;
@@ -78,9 +78,10 @@ export async function generatePDF(members, entries, currentWeekStart, weekDays) 
   };
 
   const body = members.map((member, index) => {
-    const weeklyTotal = getMemberWeeklyTotal(member._id);
-    if (weeklyTotal > 0) activeMembers++;
-    grandTotal += weeklyTotal;
+    const overallTotal = member.overallTotal || 0;
+    // We can define active members as those who have overall stamina, or active this week. Let's use overallTotal > 0.
+    if (overallTotal > 0) activeMembers++;
+    grandTotal += overallTotal;
 
     const row = [
       (index + 1).toString(),
@@ -89,7 +90,7 @@ export async function generatePDF(members, entries, currentWeekStart, weekDays) 
         const val = getStaminaValue(member._id, format(day, 'yyyy-MM-dd'));
         return val > 0 ? val.toString() : '0';
       }),
-      weeklyTotal.toString()
+      overallTotal.toString()
     ];
     return row;
   });
@@ -152,7 +153,7 @@ export async function generatePDF(members, entries, currentWeekStart, weekDays) 
 
   doc.setTextColor('#6a7f9a');
   doc.setFontSize(10);
-  doc.text('Total Stamina', 30, finalY + 16);
+  doc.text('Overall Stamina', 30, finalY + 16);
   doc.text('Active Members', 100, finalY + 16);
   doc.text('Avg per Member', 170, finalY + 16);
   doc.text('Participation %', 240, finalY + 16);

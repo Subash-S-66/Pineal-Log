@@ -114,11 +114,26 @@ export default function Dashboard() {
 
       const savedEntry = await res.json();
 
-      // Update local state
+      // Calculate difference to update overall total locally
+      const prevEntry = entries.find(e => String(e.memberId) === String(memberId) && e.date === dateStr);
+      const prevStamina = prevEntry ? prevEntry.stamina : 0;
+      const staminaDiff = stamina - prevStamina;
+
+      // Update local state for entries
       setEntries((prev) => {
         const filtered = prev.filter(e => !(e.memberId === memberId && e.date === dateStr));
         return [...filtered, savedEntry];
       });
+
+      // Update local state for members overallTotal
+      if (staminaDiff !== 0) {
+        setMembers((prev) => prev.map(m => {
+          if (m._id === memberId) {
+            return { ...m, overallTotal: (m.overallTotal || 0) + staminaDiff };
+          }
+          return m;
+        }));
+      }
 
       // Show checkmark briefly
       setSavedCells((prev) => ({ ...prev, [cellKey]: true }));
@@ -135,6 +150,9 @@ export default function Dashboard() {
   };
 
   const handleDownloadPdf = async () => {
+    if (!window.confirm("Are you sure you want to download the PDF report?")) {
+      return;
+    }
     setGeneratingPdf(true);
     try {
       const { generatePDF } = await import('./PDFGenerator');
@@ -168,8 +186,8 @@ export default function Dashboard() {
   const dailyStaminaToday = getDayTotal(todayStr);
   const contributorsToday = entries.filter(e => e.date === todayStr && (e.stamina || 0) > 0).length;
 
-  const grandTotal = members.reduce((sum, m) => sum + getMemberWeeklyTotal(m._id), 0);
-  const activeMembersThisWeek = members.filter(m => getMemberWeeklyTotal(m._id) > 0).length;
+  const grandTotal = members.reduce((sum, m) => sum + (m.overallTotal || 0), 0);
+  const activeMembersThisWeek = members.filter(m => (m.overallTotal || 0) > 0).length;
   const avgPerMember = members.length > 0 ? (grandTotal / members.length).toFixed(1) : 0;
 
   const filteredMembers = members.filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -195,7 +213,7 @@ export default function Dashboard() {
           <strong>{dailyStaminaToday}</strong>
         </div>
         <div className={styles.totalItem}>
-          <span>Weekly Stamina</span>
+          <span>Overall Stamina</span>
           <strong>{grandTotal}</strong>
         </div>
         <div className={styles.totalItem}>
@@ -210,7 +228,7 @@ export default function Dashboard() {
 
       {/* DATE NAVIGATOR */}
       <div className={styles.dateNavigator}>
-        <button onClick={() => setCurrentWeekStart(subWeeks(currentWeekStart, 1))} className={styles.navBtn}>
+        <button onClick={() => setCurrentWeekStart(subWeeks(currentWeekStart, 1))} className={styles.navBtn} disabled={loading || generatingPdf || Object.keys(savingCells).some(k => savingCells[k])}>
           <ChevronLeft /> Prev Week
         </button>
         <h2 className={styles.currentDateRange}>
@@ -219,7 +237,7 @@ export default function Dashboard() {
         <button
           onClick={() => setCurrentWeekStart(addWeeks(currentWeekStart, 1))}
           className={styles.navBtn}
-          disabled={isCurrentWeek}
+          disabled={isCurrentWeek || loading || generatingPdf || Object.keys(savingCells).some(k => savingCells[k])}
         >
           Next Week <ChevronRight />
         </button>
@@ -238,13 +256,13 @@ export default function Dashboard() {
           />
         </div>
         <div className={styles.actionButtons}>
-          <button onClick={() => setShowAddModal(true)} className={styles.btnPrimary}>
+          <button onClick={() => setShowAddModal(true)} className={styles.btnPrimary} disabled={loading || generatingPdf || Object.keys(savingCells).some(k => savingCells[k])}>
             <Plus size={18} /> Add Member
           </button>
           <button
             onClick={handleDownloadPdf}
             className={styles.btnSecondary}
-            disabled={generatingPdf || members.length === 0}
+            disabled={generatingPdf || members.length === 0 || loading || Object.keys(savingCells).some(k => savingCells[k])}
           >
             {generatingPdf ? <Loader2 size={18} className={styles.spinner} /> : <Download size={18} />}
             Download PDF Report
@@ -275,7 +293,7 @@ export default function Dashboard() {
             </thead>
             <tbody>
               {filteredMembers.map((member, index) => {
-                const weeklyTotal = getMemberWeeklyTotal(member._id);
+                const overallTotal = member.overallTotal || 0;
                 return (
                   <tr key={member._id}>
                     <td>{index + 1}</td>
@@ -294,6 +312,7 @@ export default function Dashboard() {
                               type="number"
                               min="0"
                               defaultValue={val}
+                              disabled={isSaving}
                               onBlur={(e) => {
                                 if (e.target.value !== String(val) && !(e.target.value === '' && val === '')) {
                                   handleStaminaChange(member._id, member.name, dateStr, e.target.value);
@@ -313,9 +332,9 @@ export default function Dashboard() {
                         </td>
                       );
                     })}
-                    <td className={styles.totalCell}>{weeklyTotal > 0 ? weeklyTotal : '—'}</td>
+                    <td className={styles.totalCell}>{overallTotal > 0 ? overallTotal : '—'}</td>
                     <td>
-                      <button onClick={() => handleDeleteMember(member._id, member.name)} className={styles.deleteBtn}>
+                      <button onClick={() => handleDeleteMember(member._id, member.name)} className={styles.deleteBtn} disabled={loading || generatingPdf || Object.keys(savingCells).some(k => savingCells[k])}>
                         <Trash2 size={18} />
                       </button>
                     </td>
@@ -342,14 +361,14 @@ export default function Dashboard() {
       {/* MOBILE CARDS */}
       <div className={styles.mobileCards}>
         {filteredMembers.map(member => {
-          const weeklyTotal = getMemberWeeklyTotal(member._id);
+          const overallTotal = member.overallTotal || 0;
           return (
             <div key={member._id} className={styles.card}>
               <div className={styles.cardHeader}>
                 <h3 className={styles.cardName}>{member.name}</h3>
                 <div className={styles.cardActions}>
-                  <span className={styles.cardTotal}>Total: {weeklyTotal}</span>
-                  <button onClick={() => handleDeleteMember(member._id, member.name)} className={styles.deleteBtn}>
+                  <span className={styles.cardTotal}>Total: {overallTotal}</span>
+                  <button onClick={() => handleDeleteMember(member._id, member.name)} className={styles.deleteBtn} disabled={loading || generatingPdf || Object.keys(savingCells).some(k => savingCells[k])}>
                     <Trash2 size={18} />
                   </button>
                 </div>
@@ -370,6 +389,7 @@ export default function Dashboard() {
                           type="number"
                           min="0"
                           defaultValue={val}
+                          disabled={isSaving}
                           onBlur={(e) => {
                             if (e.target.value !== String(val) && !(e.target.value === '' && val === '')) {
                               handleStaminaChange(member._id, member.name, dateStr, e.target.value);
@@ -400,7 +420,7 @@ export default function Dashboard() {
           <strong>{dailyStaminaToday}</strong>
         </div>
         <div className={styles.totalItem}>
-          <span>Weekly Stamina</span>
+          <span>Overall Stamina</span>
           <strong>{grandTotal}</strong>
         </div>
         <div className={styles.totalItem}>
