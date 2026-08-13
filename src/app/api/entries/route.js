@@ -9,6 +9,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    const tracker = searchParams.get('tracker') || 'pineal';
 
     if (!startDate || !endDate) {
       return NextResponse.json({ error: 'startDate and endDate are required' }, { status: 400 });
@@ -16,9 +17,10 @@ export async function GET(request) {
 
     const client = await clientPromise;
     const db = client.db('pineallog');
+    const collectionName = tracker === 'tiger' ? 'entries_tiger' : 'entries';
 
     // Fetch entries between startDate and endDate inclusive
-    const entries = await db.collection('entries').find({
+    const entries = await db.collection(collectionName).find({
       date: {
         $gte: startDate,
         $lte: endDate
@@ -35,7 +37,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { memberId, memberName, date, stamina } = body;
+    const { memberId, memberName, date, stamina, trackerType } = body;
 
     if (!memberId || !memberName || !date || typeof stamina !== 'number' || stamina < 0) {
       return NextResponse.json({ error: 'Invalid input data' }, { status: 400 });
@@ -43,7 +45,8 @@ export async function POST(request) {
 
     const client = await clientPromise;
     const db = client.db('pineallog');
-    const collection = db.collection('entries');
+    const collectionName = trackerType === 'tiger' ? 'entries_tiger' : 'entries';
+    const collection = db.collection(collectionName);
 
     const filter = { memberId, date };
     const update = {

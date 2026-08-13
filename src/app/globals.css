@@ -18,6 +18,13 @@
   --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.5);
 }
 
+body.theme-tiger {
+  --border-gold: #c71585;
+  --accent-gold: #ff1493;
+  --accent-gold-light: #ff69b4;
+  --shadow-gold: 0 0 20px rgba(255, 20, 147, 0.15);
+}
+
 * {
   box-sizing: border-box;
   padding: 0;

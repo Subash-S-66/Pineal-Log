@@ -499,3 +499,38 @@
     font-size: 18px;
   }
 }
+
+.trackerToggle {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.toggleBtn {
+  background-color: var(--bg-card);
+  color: var(--text-muted);
+  border: 1px solid var(--border-default);
+  padding: 8px 24px;
+  border-radius: 20px;
+  font-size: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.toggleBtn:hover {
+  border-color: var(--accent-gold);
+  color: var(--text-primary);
+}
+
+.activeToggle {
+  background-color: var(--accent-gold);
+  color: var(--bg-primary);
+  border-color: var(--accent-gold);
+}
+
+.activeToggle:hover {
+  background-color: var(--accent-gold);
+  color: var(--bg-primary);
+}
