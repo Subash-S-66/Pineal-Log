@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [trackerType, setTrackerType] = useState('pineal');
 
   const weekEnd = useMemo(() => endOfWeek(currentWeekStart, { weekStarts: 1 }), [currentWeekStart]);
   const isCurrentWeek = isSameDay(startOfWeek(new Date(), { weekStarts: 1 }), currentWeekStart) || currentWeekStart > new Date();
@@ -36,11 +37,20 @@ export default function Dashboard() {
   const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
 
   useEffect(() => {
+    document.body.classList.remove('theme-tiger', 'theme-lucky');
+    if (trackerType === 'tiger') {
+      document.body.classList.add('theme-tiger');
+    } else if (trackerType === 'lucky') {
+      document.body.classList.add('theme-lucky');
+    }
+  }, [trackerType]);
+
+  useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
         // Fetch members
-        const membersRes = await fetch('/api/members');
+        const membersRes = await fetch(`/api/members?tracker=${trackerType}`);
         const membersData = await membersRes.json();
 
         if (Array.isArray(membersData)) {
@@ -50,7 +60,7 @@ export default function Dashboard() {
         }
 
         // Fetch entries for the week
-        const entriesRes = await fetch(`/api/entries?startDate=${currentWeekStartStr}&endDate=${weekEndStr}`);
+        const entriesRes = await fetch(`/api/entries?startDate=${currentWeekStartStr}&endDate=${weekEndStr}&tracker=${trackerType}`);
         const entriesData = await entriesRes.json();
 
         if (Array.isArray(entriesData)) {
@@ -68,7 +78,7 @@ export default function Dashboard() {
     };
 
     fetchData();
-  }, [currentWeekStartStr, weekEndStr]);
+  }, [currentWeekStartStr, weekEndStr, trackerType]);
 
   const handleAddMember = (newMember) => {
     setMembers((prev) => [...prev, newMember]);
@@ -106,7 +116,8 @@ export default function Dashboard() {
           memberId,
           memberName,
           date: dateStr,
-          stamina
+          stamina,
+          trackerType
         })
       });
 
@@ -156,7 +167,7 @@ export default function Dashboard() {
     setGeneratingPdf(true);
     try {
       const { generatePDF } = await import('./PDFGenerator');
-      generatePDF(members, entries, currentWeekStart, weekDays);
+      generatePDF(members, entries, currentWeekStart, weekDays, trackerType);
     } catch (error) {
       console.error(error);
       showToast('Failed to generate PDF');
@@ -201,8 +212,30 @@ export default function Dashboard() {
       {/* HEADER */}
       <header className={styles.header}>
         <div className={styles.logoContainer}>
-          <h1 className={styles.logo}>PinealLog</h1>
+          <h1 className={styles.logo}>
+            {trackerType === 'tiger' ? 'Tiger Log' : trackerType === 'lucky' ? 'Lucky Log' : 'PinealLog'}
+          </h1>
           <p className={styles.subtitle}>HOS Alliance · Server 1895</p>
+        </div>
+        <div className={styles.trackerToggle}>
+          <button
+            className={`${styles.toggleBtn} ${trackerType === 'pineal' ? styles.activeToggle : ''}`}
+            onClick={() => setTrackerType('pineal')}
+          >
+            Pineal
+          </button>
+          <button
+            className={`${styles.toggleBtn} ${trackerType === 'tiger' ? styles.activeToggle : ''}`}
+            onClick={() => setTrackerType('tiger')}
+          >
+            Tiger
+          </button>
+          <button
+            className={`${styles.toggleBtn} ${trackerType === 'lucky' ? styles.activeToggle : ''}`}
+            onClick={() => setTrackerType('lucky')}
+          >
+            Lucky
+          </button>
         </div>
       </header>
 

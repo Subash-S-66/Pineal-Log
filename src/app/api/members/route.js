@@ -10,8 +10,14 @@ const DEFAULT_MEMBERS = [
 
 
 
-export async function GET() {
+export async function GET(request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const tracker = searchParams.get('tracker') || 'pineal';
+    let entriesCollection = 'entries';
+    if (tracker === 'tiger') entriesCollection = 'entries_tiger';
+    if (tracker === 'lucky') entriesCollection = 'entries_lucky';
+
     const client = await clientPromise;
     const db = client.db('pineallog');
     const collection = db.collection('members');
@@ -25,7 +31,7 @@ export async function GET() {
       },
       {
         $lookup: {
-          from: 'entries',
+          from: entriesCollection,
           let: { idStr: "$idString", idObj: "$_id" },
           pipeline: [
             {
@@ -76,7 +82,7 @@ export async function GET() {
         },
         {
           $lookup: {
-            from: 'entries',
+            from: entriesCollection,
             let: { idStr: "$idString", idObj: "$_id" },
             pipeline: [
               {
