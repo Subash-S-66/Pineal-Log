@@ -37,10 +37,11 @@ export default function Dashboard() {
   const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
 
   useEffect(() => {
+    document.body.classList.remove('theme-tiger', 'theme-lucky');
     if (trackerType === 'tiger') {
       document.body.classList.add('theme-tiger');
-    } else {
-      document.body.classList.remove('theme-tiger');
+    } else if (trackerType === 'lucky') {
+      document.body.classList.add('theme-lucky');
     }
   }, [trackerType]);
 
@@ -211,7 +212,9 @@ export default function Dashboard() {
       {/* HEADER */}
       <header className={styles.header}>
         <div className={styles.logoContainer}>
-          <h1 className={styles.logo}>{trackerType === 'tiger' ? 'Tiger Log' : 'PinealLog'}</h1>
+          <h1 className={styles.logo}>
+            {trackerType === 'tiger' ? 'Tiger Log' : trackerType === 'lucky' ? 'Lucky Log' : 'PinealLog'}
+          </h1>
           <p className={styles.subtitle}>HOS Alliance · Server 1895</p>
         </div>
         <div className={styles.trackerToggle}>
@@ -226,6 +229,12 @@ export default function Dashboard() {
             onClick={() => setTrackerType('tiger')}
           >
             Tiger
+          </button>
+          <button
+            className={`${styles.toggleBtn} ${trackerType === 'lucky' ? styles.activeToggle : ''}`}
+            onClick={() => setTrackerType('lucky')}
+          >
+            Lucky
           </button>
         </div>
       </header>

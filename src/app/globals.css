@@ -25,6 +25,13 @@ body.theme-tiger {
   --shadow-gold: 0 0 20px rgba(255, 20, 147, 0.15);
 }
 
+body.theme-lucky {
+  --border-gold: #8b0000;
+  --accent-gold: #ff0000;
+  --accent-gold-light: #ff4500;
+  --shadow-gold: 0 0 20px rgba(255, 0, 0, 0.15);
+}
+
 * {
   box-sizing: border-box;
   padding: 0;

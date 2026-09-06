@@ -17,7 +17,9 @@ export async function GET(request) {
 
     const client = await clientPromise;
     const db = client.db('pineallog');
-    const collectionName = tracker === 'tiger' ? 'entries_tiger' : 'entries';
+    let collectionName = 'entries';
+    if (tracker === 'tiger') collectionName = 'entries_tiger';
+    if (tracker === 'lucky') collectionName = 'entries_lucky';
 
     // Fetch entries between startDate and endDate inclusive
     const entries = await db.collection(collectionName).find({
@@ -45,7 +47,9 @@ export async function POST(request) {
 
     const client = await clientPromise;
     const db = client.db('pineallog');
-    const collectionName = trackerType === 'tiger' ? 'entries_tiger' : 'entries';
+    let collectionName = 'entries';
+    if (trackerType === 'tiger') collectionName = 'entries_tiger';
+    if (trackerType === 'lucky') collectionName = 'entries_lucky';
     const collection = db.collection(collectionName);
 
     const filter = { memberId, date };
